@@ -64,6 +64,29 @@ The prompt enforces a strict JSON contract and fixed schema with explicit enum v
 4. Access UI at:
    - `http://localhost:3000`
 
+### Docker Deployment (Recommended for OCR)
+OCR fallback requires `poppler-utils` and `tesseract-ocr`. The provided `Dockerfile` installs both.
+
+1. Build image:
+   - `docker build -t concall-intelligence-engine .`
+2. Run container:
+   - `docker run --rm -p 3000:3000 --env-file .env concall-intelligence-engine`
+3. Open:
+   - `http://localhost:3000`
+
+### Render (Docker) Setup
+1. Push repository to GitHub.
+2. Create a new Render **Web Service**.
+3. Select **Environment: Docker**.
+4. Set Root Directory to repository root (`money`).
+5. Add environment variables in Render dashboard:
+   - `GEMINI_API_KEY`
+   - `MODEL_NAME=gemini-2.5-flash`
+   - `OCR_MAX_PAGES=25`
+   - `OCR_DPI=180`
+   - `OCR_LANG=eng`
+6. Deploy and verify `/health` and scanned PDF upload flow.
+
 ## Environment Variables
 - `GEMINI_API_KEY`: Google Generative Language API key.
 - `MODEL_NAME`: Gemini model name (`gemini-2.5-flash`).
