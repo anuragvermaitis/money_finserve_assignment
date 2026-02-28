@@ -201,6 +201,8 @@
       const statusEl = document.getElementById('status');
       const errorEl = document.getElementById('error');
       const summaryEl = document.getElementById('summary');
+      const POLL_INTERVAL_MS = 2500;
+      const MAX_POLL_ATTEMPTS = 240;
 
       function renderList(items) {
         if (!items || items.length === 0) {
@@ -266,6 +268,30 @@
         summaryEl.style.display = 'block';
       }
 
+      async function pollJob(jobId) {
+        for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt += 1) {
+          const response = await fetch(`/api/job/${jobId}`);
+          const data = await response.json();
+
+          if (!response.ok && data?.status !== 'failed') {
+            throw new Error(data.error || 'Failed to check job status');
+          }
+
+          if (data.status === 'completed') {
+            return data;
+          }
+
+          if (data.status === 'failed') {
+            throw new Error(data.error || 'Summary processing failed');
+          }
+
+          statusEl.textContent = `Processing transcript... (${attempt})`;
+          await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        }
+
+        throw new Error('Processing is taking too long. Please try again.');
+      }
+
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         errorEl.textContent = '';
@@ -297,7 +323,14 @@
             throw new Error(data.error || 'Failed to generate summary');
           }
 
-          renderSummary(data);
+          if (response.status === 202 && data.job_id) {
+            statusEl.textContent = 'File accepted. Processing transcript...';
+            const completed = await pollJob(data.job_id);
+            renderSummary(completed);
+          } else {
+            renderSummary(data);
+          }
+
           statusEl.textContent = 'Summary generated successfully.';
         } catch (error) {
           errorEl.textContent = error.message || 'Unexpected error occurred';

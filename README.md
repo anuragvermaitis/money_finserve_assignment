@@ -85,6 +85,9 @@ OCR fallback requires `poppler-utils` and `tesseract-ocr`. The provided `Dockerf
    - `OCR_MAX_PAGES=25`
    - `OCR_DPI=180`
    - `OCR_LANG=eng`
+   - `SELF_PING_ENABLED=true` (optional)
+   - `SELF_PING_INTERVAL_MS=480000` (optional; 8 minutes)
+   - `SELF_PING_URL=https://<your-service>.onrender.com/health` (optional)
 6. Deploy and verify `/health` and scanned PDF upload flow.
 
 ## Environment Variables
@@ -94,3 +97,6 @@ OCR fallback requires `poppler-utils` and `tesseract-ocr`. The provided `Dockerf
 - `OCR_MAX_PAGES`: Maximum pages processed in OCR fallback.
 - `OCR_DPI`: OCR rasterization DPI.
 - `OCR_LANG`: OCR language code (`eng` by default).
+- `SELF_PING_ENABLED`: Enables periodic self health checks.
+- `SELF_PING_INTERVAL_MS`: Self-ping interval in milliseconds (default `480000`).
+- `SELF_PING_URL`: Health URL to ping. If omitted, app uses `RENDER_EXTERNAL_URL/health` when available.
