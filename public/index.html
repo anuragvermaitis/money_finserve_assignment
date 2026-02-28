@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Concall Intelligence Engine</title>
+    <style>
+      :root {
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #4b5563;
+        --line: #e5e7eb;
+        --primary: #1f2937;
+        --primary-hover: #111827;
+        --error: #b91c1c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.45;
+      }
+
+      .container {
+        max-width: 920px;
+        margin: 32px auto;
+        padding: 0 16px 40px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 20px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+      }
+
+      .subtitle {
+        margin: 8px 0 18px;
+        color: var(--muted);
+        font-size: 0.97rem;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      input[type="file"] {
+        flex: 1;
+        min-width: 230px;
+      }
+
+      button,
+      .download-link {
+        border: 0;
+        border-radius: 8px;
+        background: var(--primary);
+        color: #fff;
+        padding: 9px 14px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      button:hover,
+      .download-link:hover {
+        background: var(--primary-hover);
+      }
+
+      button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+
+      .status,
+      .error {
+        margin: 12px 0 0;
+        font-size: 0.92rem;
+      }
+
+      .status {
+        color: var(--muted);
+      }
+
+      .error {
+        color: var(--error);
+      }
+
+      .summary {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+
+      .summary-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .summary-title {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+
+      .meta {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .source-note {
+        margin: 10px 0 0;
+        color: #374151;
+        font-size: 0.9rem;
+      }
+
+      .section {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .section h2 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .section p {
+        margin: 0;
+        color: #1f2937;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      li {
+        margin: 6px 0;
+      }
+
+      .empty {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          margin: 18px auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1 class="title">Concall Intelligence Engine</h1>
+        <p class="subtitle">
+          Upload an earnings call transcript PDF to generate a structured research summary.
+        </p>
+
+        <form id="uploadForm" class="form-row">
+          <input id="pdfFile" type="file" accept="application/pdf" required />
+          <button id="submitBtn" type="submit">Generate Summary</button>
+        </form>
+
+        <p id="status" class="status"></p>
+        <p id="error" class="error"></p>
+
+        <div id="summary" class="summary"></div>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('uploadForm');
+      const fileInput = document.getElementById('pdfFile');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusEl = document.getElementById('status');
+      const errorEl = document.getElementById('error');
+      const summaryEl = document.getElementById('summary');
+
+      function renderList(items) {
+        if (!items || items.length === 0) {
+          return '<p class="empty">Not explicitly mentioned.</p>';
+        }
+        return `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
+      }
+
+      function renderSummary(data) {
+        const s = data.summary;
+        const m = data.meta;
+        const summaryId = m.summary_id;
+
+        const sourceIntegrityNote = m.was_truncated
+          ? `<p class="source-note">Note: Summary generated from the first ${m.cleaned_chars} characters of the transcript. Additional context may exist beyond this range.</p>`
+          : '';
+
+        const downloadButton = summaryId
+          ? `<a class="download-link" href="/download-summary/${summaryId}">Download PDF</a>`
+          : '';
+
+        summaryEl.innerHTML = `
+          <div class="summary-header">
+            <h2 class="summary-title">Concall Summary - ${s.quarter}</h2>
+            ${downloadButton}
+          </div>
+
+          <p class="meta">Company: ${s.company} | Sentiment: ${s.rule_based_sentiment || s.financial_sentiment} | Confidence: ${s.confidence_level}</p>
+          ${sourceIntegrityNote}
+
+          <section class="section">
+            <h2>1. Overall Sentiment</h2>
+            <p>${s.rule_based_sentiment || s.financial_sentiment} (${s.confidence_level} confidence)</p>
+            <p class="meta">${s.sentiment_explanation}</p>
+          </section>
+
+          <section class="section">
+            <h2>2. Key Highlights</h2>
+            ${renderList(s.key_highlights)}
+          </section>
+
+          <section class="section">
+            <h2>3. Risks & Concerns</h2>
+            ${renderList(s.risks_and_concerns)}
+          </section>
+
+          <section class="section">
+            <h2>4. Management Commitments</h2>
+            ${renderList(s.management_commitments)}
+          </section>
+
+          <section class="section">
+            <h2>5. Guidance / Outlook</h2>
+            ${renderList(s.guidance_outlook)}
+          </section>
+
+          <section class="section">
+            <h2>6. Analyst Focus Areas</h2>
+            ${renderList(s.analyst_focus_areas)}
+          </section>
+        `;
+
+        summaryEl.style.display = 'block';
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorEl.textContent = '';
+        statusEl.textContent = '';
+        summaryEl.style.display = 'none';
+        summaryEl.innerHTML = '';
+
+        const file = fileInput.files[0];
+        if (!file) {
+          errorEl.textContent = 'Please select a PDF file.';
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('transcript', file);
+
+        submitBtn.disabled = true;
+        statusEl.textContent = 'Processing transcript...';
+
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to generate summary');
+          }
+
+          renderSummary(data);
+          statusEl.textContent = 'Summary generated successfully.';
+        } catch (error) {
+          errorEl.textContent = error.message || 'Unexpected error occurred';
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

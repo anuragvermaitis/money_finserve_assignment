@@ -1,0 +1,30 @@
+{
+  "name": "research-ai",
+  "version": "1.0.0",
+  "description": "Financial Research AI Tool - Concall Intelligence Engine",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "keywords": [
+    "finance",
+    "earnings",
+    "transcript",
+    "ai",
+    "research"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.8.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.15.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
